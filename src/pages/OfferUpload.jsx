@@ -1,4 +1,10 @@
+import { useState } from "react";
+
 export default function OfferUpload() {
+  const [offerFile, setOfferFile] = useState(null);
+  const [completionFile, setCompletionFile] = useState(null);
+  const [status, setStatus] = useState("Pending");
+
   const page = {
     minHeight: "100vh",
     background:
@@ -103,40 +109,89 @@ export default function OfferUpload() {
     fontWeight: 600,
   };
 
+  // ---------- Upload handler (ML integration) ----------
+  const handleSubmit = async () => {
+    if (!offerFile) {
+      alert("Upload your Offer Letter PDF first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", offerFile); // MAIN ML INPUT
+    formData.append("jobDescription", "Software Engineer 6 LPA role");
+
+    try {
+      const res = await fetch("http://localhost:5000/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      alert(
+        "Resume Analysis:\n\n" +
+          data.suggestions.map((s, i) => `${i + 1}. ${s}`).join("\n")
+      );
+
+      setStatus("Submitted");
+    } catch (err) {
+      alert("Upload failed. Server error.");
+      console.log(err);
+    }
+  };
+
   return (
     <div style={page}>
       <div style={card}>
         <h2 style={heading}>Upload Offer Letter</h2>
         <p style={sub}>
-          Submit your final offer and completion letters in PDF format so the
-          placement team can verify your placement.
+          Submit your final offer and completion letters in PDF format.  
+          Your resume will also be analyzed using AI to improve your placement chances.
         </p>
 
+        {/* Offer Letter */}
         <div style={{ marginBottom: "14px" }}>
           <div style={uploadLabel}>Offer Letter (PDF)</div>
           <label style={uploadBox}>
             <span style={uploadIcon}>📄</span>
             <span>Click to choose file</span>
             <span style={uploadHint}>Only PDF files are accepted.</span>
-            <input type="file" accept="application/pdf" style={fileInput} />
+
+            <input
+              type="file"
+              accept="application/pdf"
+              style={fileInput}
+              onChange={(e) => setOfferFile(e.target.files[0])}
+            />
           </label>
         </div>
 
+        {/* Completion Letter */}
         <div>
           <div style={uploadLabel}>Completion Letter (PDF)</div>
           <label style={uploadBox}>
             <span style={uploadIcon}>✅</span>
             <span>Click to choose file</span>
-            <span style={uploadHint}>Upload once internship / training is done.</span>
-            <input type="file" accept="application/pdf" style={fileInput} />
+            <span style={uploadHint}>
+              Upload once internship / training is done.
+            </span>
+
+            <input
+              type="file"
+              accept="application/pdf"
+              style={fileInput}
+              onChange={(e) => setCompletionFile(e.target.files[0])}
+            />
           </label>
         </div>
 
-        <button style={button}>Submit</button>
+        <button style={button} onClick={handleSubmit}>
+          Submit
+        </button>
 
         <div style={statusRow}>
           <span>Status:</span>
-          <span style={statusPill}>Pending</span>
+          <span style={statusPill}>{status}</span>
         </div>
       </div>
     </div>
